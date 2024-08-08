@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Get user by ID
 router.get('/:id', async (req, res) => {
     try {
         const user = await User.findOne({_id: req.params.id}).populate(['thoughts', 'friends']);
@@ -24,6 +25,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Create a new user
 router.post('/', async (req, res) => {
     try {
         const user = await User.create(req.body);
@@ -34,6 +36,7 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Update a user by ID
 router.put('/:id', async (req, res) => {
     try {
         const user = await User.findOneAndUpdate({_id: req.params.id}, {$set:req.body}, {new: true});
@@ -48,6 +51,54 @@ router.delete('/:id', async (req, res) => {
     try {
         const user = await User.findOneAndDelete({_id: req.params.id});
         res.json(user);
+    } catch(err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Add a friend to a user's friend list
+router.post('/:userId/friends/:friendId', async (req, res) => {
+    try {
+        const {userId, friendId } = req.params;
+        if (userId === friendId) {
+            return res.status(400).json({message: "You can't be friends with yourself!"});
+        }
+        const friend = await User.findOne({_id: friendId});
+        if (!friend) {
+            res.status(404).json({message: "Friend not found!"});
+            return;
+        }
+        const user = await User.findOneAndUpdate(
+            {_id: userId},
+            {$addToSet: {friends: friendId}},
+            {new: true}
+        ).populate('friends');
+        if (!user) {
+            res.status(404).json({message: "User not found!"});
+            return;
+        }
+        res.status(200).json(user);
+    } catch(err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Remove a friend from a user's friend list
+router.delete('/:userId/friends/:friendId', async (req, res) => {
+    try {
+        const {userId, friendId } = req.params;
+        const user = await User.findOneAndUpdate(
+            {_id: userId},
+            {$pull: {friends: friendId}},
+            {new: true}
+        ).populate('friends');
+        if (!user) {
+            res.status(404).json({message: "User not found!"});
+            return;
+        }
+        res.status(200).json(user);
     } catch(err) {
         console.error(err);
         res.status(500).json(err);
