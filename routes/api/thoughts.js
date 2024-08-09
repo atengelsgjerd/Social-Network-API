@@ -1,4 +1,4 @@
-const {Thought} = require('../../models');
+const {Thought, User} = require('../../models');
 const router = require('express').Router();
 
 
@@ -57,7 +57,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.put('/:id/reactions', async (req, res) => {
+router.post('/:id/reactions', async (req, res) => {
     try {
         const thought = await Thought.findOneAndUpdate({_id: req.params.id}, {$addToSet:{reactions:req.body}}, {new: true});
         res.json(thought);
@@ -67,9 +67,14 @@ router.put('/:id/reactions', async (req, res) => {
     }
 });
 
-router.delete('/:id/reactions', async (req, res) => {
+router.delete('/:thoughtId/reactions/:reactionId', async (req, res) => {
     try {
-        const thought = await Thought.findOneAndDelete({_id: req.params.id}, {$pull:{reactions:{reactionId:req.params.id}}}, {new: true});
+        const thought = await Thought.findOneAndUpdate(
+            { _id: req.params.thoughtId },
+            { $pull: { reactions: { reactionId: req.params.reactionId } } },
+            { new: true }
+        );
+        
         res.json(thought);
     } catch(err) {
         console.error(err);
